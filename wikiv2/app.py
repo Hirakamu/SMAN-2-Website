@@ -6,16 +6,17 @@ from datetime import datetime
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 
+print(__file__)
 
+DATALOC = '/var/www/sman2wiki/data/'
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
-PAGES_DIR = os.path.join(os.path.dirname(__file__), 'pages')
+PAGES_DIR = os.path.join(DATALOC, 'wikipages')
 os.makedirs(PAGES_DIR, exist_ok=True)
 
-
 # Database setup
-DB_PATH = os.path.join(os.path.dirname(__file__), 'users.db')
-CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'init.flag')
+DB_PATH = os.path.join(DATALOC, 'users.db')
+CONFIG_PATH = os.path.join(DATALOC, 'init.flag')
 
 
 # Profile management
@@ -97,20 +98,52 @@ def init_app():
 init_app()
 
 
+
 # Helper: get page metadata
+
+TRASH_DIR = os.path.join(DATALOC, 'trash')
+os.makedirs(TRASH_DIR, exist_ok=True)
+DELETED_DIR = os.path.join(DATALOC, 'deleted')
+os.makedirs(DELETED_DIR, exist_ok=True)
+
 def get_pages():
     pages = []
     for fname in os.listdir(PAGES_DIR):
         if fname.endswith('.md'):
             path = os.path.join(PAGES_DIR, fname)
             stat = os.stat(path)
+            author = 'Anonymous'
+            # Try to read author from file header
+            with open(path, 'r') as f:
+                first_line = f.readline()
+                if first_line.startswith('Author: '):
+                    author = first_line[len('Author: '):].strip()
             pages.append({
                 'title': fname[:-3],
                 'date': datetime.fromtimestamp(stat.st_mtime).strftime('%d %b %Y'),
-                'author': 'Anonymous',  # Could be extended
+                'author': author,
                 'filename': fname
             })
     # Sort by last modified
+    return sorted(pages, key=lambda x: x['date'], reverse=True)
+
+def get_trashed_pages():
+    pages = []
+    for fname in os.listdir(TRASH_DIR):
+        if fname.endswith('.md'):
+            path = os.path.join(TRASH_DIR, fname)
+            stat = os.stat(path)
+            author = 'Anonymous'
+            with open(path, 'r') as f:
+                first_line = f.readline()
+                if first_line.startswith('Author: '):
+                    author = first_line[len('Author: '):].strip()
+            pages.append({
+                'title': fname[:-3],
+                'date': datetime.fromtimestamp(stat.st_mtime).strftime('%d %b %Y'),
+                'author': author,
+                'filename': fname
+            })
     return sorted(pages, key=lambda x: x['date'], reverse=True)
 
 # User authentication helpers
@@ -136,6 +169,8 @@ def landing():
     return render_template('landing.html', is_admin=is_admin(), latest=latest, categories=categories)
 
 
+
+
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
     if not is_logged_in() or not is_admin():
@@ -146,8 +181,9 @@ def admin():
         with open(lockfile, 'r') as f:
             locked_pages = set(line.strip() for line in f if line.strip())
     if request.method == 'POST':
+        # Lock/unlock
         page = request.form.get('page')
-        if page:
+        if page and 'lock' in request.form:
             if page in locked_pages:
                 locked_pages.remove(page)
             else:
@@ -155,10 +191,27 @@ def admin():
             with open(lockfile, 'w') as f:
                 for p in locked_pages:
                     f.write(p + '\n')
-        flash(f'Lock status updated for {page}')
+            flash(f'Lock status updated for {page}')
+        # Restore
+        restore_page = request.form.get('restore')
+        if restore_page:
+            src = os.path.join(TRASH_DIR, f'{restore_page}.md')
+            dst = os.path.join(PAGES_DIR, f'{restore_page}.md')
+            if os.path.exists(src):
+                os.rename(src, dst)
+                flash(f'Restored page: {restore_page}')
+        # Delete permanently
+        delete_page = request.form.get('delete_permanent')
+        if delete_page:
+            src = os.path.join(TRASH_DIR, f'{delete_page}.md')
+            dst = os.path.join(DELETED_DIR, f'{delete_page}.md')
+            if os.path.exists(src):
+                os.rename(src, dst)
+                flash(f'Permanently deleted page: {delete_page}')
         return redirect(url_for('admin'))
     pages = get_pages()
-    return render_template('admin.html', pages=pages, locked_pages=locked_pages)
+    trashed = get_trashed_pages()
+    return render_template('admin.html', pages=pages, locked_pages=locked_pages, trashed=trashed)
 
 
 # User registration
@@ -226,15 +279,23 @@ def view_page(page):
     if not os.path.exists(path):
         return redirect(url_for('edit_page', page=page))
     with open(path, 'r') as f:
-        content = f.read()
+        lines = f.readlines()
+        author = 'Anonymous'
+        if lines and lines[0].startswith('Author: '):
+            author = lines[0][len('Author: '):].strip()
+            content = ''.join(lines[1:])
+        else:
+            content = ''.join(lines)
     html = markdown.markdown(content)
     stat = os.stat(path)
     meta = {
         'title': page,
         'date': datetime.fromtimestamp(stat.st_mtime).strftime('%d %b %Y'),
-        'author': 'Anonymous'
+        'author': author
     }
     return render_template('view.html', page=page, content=html, meta=meta)
+
+
 
 @app.route('/artikel/<page>/edit', methods=['GET', 'POST'])
 def edit_page(page):
@@ -247,7 +308,24 @@ def edit_page(page):
     if page in locked_pages and not session.get('is_admin'):
         flash('This page is locked by admin. Only admin can edit.')
         return redirect(url_for('view_page', page=page))
+    author = 'Anonymous'
+    content = ''
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            lines = f.readlines()
+            if lines and lines[0].startswith('Author: '):
+                author = lines[0][len('Author: '):].strip()
+                content = ''.join(lines[1:])
+            else:
+                content = ''.join(lines)
     if request.method == 'POST':
+        # Delete page
+        if 'delete' in request.form:
+            trash_path = os.path.join(TRASH_DIR, f'{page}.md')
+            if os.path.exists(path):
+                os.rename(path, trash_path)
+                flash(f'Page {page} moved to trash.')
+            return redirect(url_for('index'))
         new_title = request.form.get('title', page).strip()
         content = request.form['content']
         new_path = os.path.join(PAGES_DIR, f'{new_title}.md')
@@ -260,15 +338,14 @@ def edit_page(page):
                 os.rename(path, new_path)
             path = new_path
             page = new_title
-        # Write content to new or existing file
+        # Write content to new or existing file, with author header
+        author = session.get('user', 'Anonymous')
         with open(path, 'w') as f:
+            f.write(f'Author: {author}\n') 
             f.write(content)
         return redirect(url_for('view_page', page=page))
-    content = ''
-    if os.path.exists(path):
-        with open(path, 'r') as f:
-            content = f.read()
-    return render_template('edit.html', page=page, content=content)
+    meta = {'title': page, 'author': author}
+    return render_template('edit.html', page=page, content=content, meta=meta)
 
 if __name__ == '__main__':
     app.run(debug=True)
