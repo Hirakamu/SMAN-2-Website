@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Profile - Wiki Plus</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="header">Profile</div>
+    <div class="nav">
+        <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('landing') }}">Landing</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </div>
+    <div style="max-width:500px;margin:2em auto;background:#fffbe6;border-radius:12px;box-shadow:0 2px 8px #eab30833;padding:2em;">
+        <h2>Edit Profile</h2>
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <ul style="color:red;">
+            {% for message in messages %}
+              <li>{{ message }}</li>
+            {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+        <form method="post">
+            <label for="username">Change Username:</label><br>
+            <input type="text" name="username" id="username" value="{{ user['username'] }}" style="width:100%;margin-bottom:1em;" required><br>
+            <hr>
+            <label for="current_password">Current Password:</label><br>
+            <input type="password" name="current_password" id="current_password" style="width:100%;margin-bottom:1em;" required><br>
+            <label for="new_password">New Password:</label><br>
+            <input type="password" name="new_password" id="new_password" style="width:100%;margin-bottom:1em;"><br>
+            <label for="confirm_password">Confirm New Password:</label><br>
+            <input type="password" name="confirm_password" id="confirm_password" style="width:100%;margin-bottom:1em;"><br>
+            <button type="submit" class="create-btn">Update Profile</button>
+        </form>
+    </div>
+    <div class="footer">
+        &copy; 2025 SMAN-2 Wiki Plus
+    </div>
+</body>
+</html>
