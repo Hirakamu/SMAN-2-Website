@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login - SMAN-2 Wiki</title>
+    <title>Login - Wiki Plus</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div style="max-width:400px;margin:auto;">
+    <div class="header">Login</div>
+    <div class="nav">
+        <a href="{{ url_for('landing') }}">Home</a>
+        <a href="{{ url_for('register') }}">Register</a>
+    </div>
+    <div style="max-width:400px;margin:2em auto;background:#fffbe6;border-radius:12px;box-shadow:0 2px 8px #eab30833;padding:2em;">
         <h2>Login</h2>
         {% with messages = get_flashed_messages() %}
           {% if messages %}
@@ -19,10 +24,11 @@
         <form method="post">
             <input type="text" name="username" placeholder="Username" required><br><br>
             <input type="password" name="password" placeholder="Password" required><br><br>
-            <button type="submit">Login</button>
+            <button type="submit" class="create-btn">Login</button>
         </form>
-        <p>Don't have an account? <a href="{{ url_for('register') }}">Register</a></p>
-        <a href="{{ url_for('landing') }}">Back to Home</a>
+    </div>
+    <div class="footer">
+        &copy; 2025 SMAN-2 Wiki Plus
     </div>
 </body>
 </html>

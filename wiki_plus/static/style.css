@@ -1,0 +1,75 @@
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f9fafb; color: #222; margin: 0; }
+.header {
+    background: linear-gradient(90deg, #2a4d7c, #eab308, #ef4444, #22d3ee);
+    color: #fff;
+    padding: 2em 0 1em 0;
+    text-align: center;
+    font-size: 2.5em;
+    font-weight: bold;
+    letter-spacing: 2px;
+    background-size: 400% 400%;
+    animation: gradientMove 4s ease-in-out infinite;
+}
+@keyframes gradientMove {
+    0% {background-position:0% 50%;}
+    50% {background-position:100% 50%;}
+    100% {background-position:0% 50%;}
+}
+.nav {
+    background: #2a4d7c;
+    color: #fff;
+    padding: 0.7em 0;
+    text-align: center;
+    font-size: 1.1em;
+}
+.nav a { color: #fff; margin: 0 1em; text-decoration: none; font-weight: 500; }
+.nav a:hover { text-decoration: underline; }
+.latest-news {
+    background: #fffbe6;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px #eab30833;
+    padding: 1.5em;
+    margin: 2em auto;
+    max-width: 700px;
+}
+.latest-news h2 { color: #eab308; margin-bottom: 1em; }
+.news-list { list-style: none; padding-left: 50px; padding-top: 20px;}
+.news-list li { margin-bottom: 1.2em; }
+.news-title { font-size: 1.2em; font-weight: bold; color: #2a4d7c; }
+.news-meta { font-size: 0.95em; color: #888; margin-left: 0.5em; }
+.category-tags { margin: 2em auto; text-align: center; }
+.category-tag {
+    display: inline-block;
+    background: #22d3ee;
+    color: #fff;
+    border-radius: 8px;
+    padding: 0.4em 1.2em;
+    margin: 0 0.5em 0.5em 0.5em;
+    font-size: 1em;
+    font-weight: 500;
+    box-shadow: 0 1px 4px #22d3ee33;
+}
+.category-tag.berita { background: #eab308; }
+.category-tag.artikel { background: #ef4444; }
+.category-tag.prestasi { background: #2a4d7c; }
+.category-tag.pendidikan { background: #22d3ee; }
+.footer {
+    background: #2a4d7c;
+    color: #fff;
+    text-align: center;
+    padding: 1em 0;
+}
+
+/* Moderation lock/unlock button styles */
+.locked-btn {
+    background: #ef4444 !important;
+    color: #fff !important;
+    font-weight: bold;
+    border: none;
+}
+.unlocked-btn {
+    background: #22d3ee !important;
+    color: #fff !important;
+    font-weight: bold;
+    border: none;
+}
