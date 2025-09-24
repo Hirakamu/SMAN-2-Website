@@ -1,89 +1,96 @@
 
+
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import os
 import markdown
-import sqlite3
-from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
 PAGES_DIR = os.path.join(os.path.dirname(__file__), 'pages')
 os.makedirs(PAGES_DIR, exist_ok=True)
-DB_PATH = os.path.join(os.path.dirname(__file__), 'wiki.db')
 
-# Database setup
-def init_db():
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute('''CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL
-        )''')
-init_db()
+# Premade admin credentials
+ADMIN_USER = 'admin'
+ADMIN_PASS = 's2wiki2025'
 
 @app.route('/')
 def landing():
-    return render_template('landing.html')
+    is_admin = session.get('is_admin', False)
+    return render_template('landing.html', is_admin=is_admin)
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
+@app.route('/admin', methods=['GET', 'POST'])
+def admin():
+    if not session.get('is_admin'):
+        return redirect(url_for('admin_login'))
+    # Load locked pages from file
+    lockfile = os.path.join(PAGES_DIR, '.locked_pages')
+    locked_pages = set()
+    if os.path.exists(lockfile):
+        with open(lockfile, 'r') as f:
+            locked_pages = set(line.strip() for line in f if line.strip())
+    # Handle lock/unlock action
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        with sqlite3.connect(DB_PATH) as conn:
-            cur = conn.execute('SELECT password FROM users WHERE username=?', (username,))
-            row = cur.fetchone()
-            if row and check_password_hash(row[0], password):
-                session['username'] = username
-                return redirect(url_for('index'))
+        page = request.form.get('page')
+        if page:
+            if page in locked_pages:
+                locked_pages.remove(page)
             else:
-                flash('Invalid credentials')
-    return render_template('login.html')
+                locked_pages.add(page)
+            with open(lockfile, 'w') as f:
+                for p in locked_pages:
+                    f.write(p + '\n')
+        flash(f'Lock status updated for {page}')
+        return redirect(url_for('admin'))
+    # List all pages
+    pages = [f[:-3] for f in os.listdir(PAGES_DIR) if f.endswith('.md')]
+    return render_template('admin.html', pages=pages, locked_pages=locked_pages)
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        hashed = generate_password_hash(password)
-        try:
-            with sqlite3.connect(DB_PATH) as conn:
-                conn.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, hashed))
-            flash('Registration successful! Please log in.')
-            return redirect(url_for('login'))
-        except sqlite3.IntegrityError:
-            flash('Username already exists.')
-    return render_template('register.html')
+        if username == ADMIN_USER and password == ADMIN_PASS:
+            session['is_admin'] = True
+            flash('Welcome, admin!')
+            return redirect(url_for('admin'))
+        else:
+            flash('Invalid admin credentials.')
+    return render_template('admin_login.html')
 
-@app.route('/logout')
-def logout():
-    session.pop('username', None)
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('is_admin', None)
+    flash('Logged out from admin.')
     return redirect(url_for('landing'))
 
 @app.route('/home')
 def index():
-    if 'username' not in session:
-        return redirect(url_for('login'))
     pages = [f[:-3] for f in os.listdir(PAGES_DIR) if f.endswith('.md')]
-    return render_template('index.html', pages=pages, username=session['username'])
+    return render_template('index.html', pages=pages)
 
 @app.route('/wiki/<page>')
 def view_page(page):
-    if 'username' not in session:
-        return redirect(url_for('login'))
     path = os.path.join(PAGES_DIR, f'{page}.md')
     if not os.path.exists(path):
         return redirect(url_for('edit_page', page=page))
     with open(path, 'r') as f:
         content = f.read()
     html = markdown.markdown(content)
-    return render_template('view.html', page=page, content=html, username=session['username'])
+    return render_template('view.html', page=page, content=html)
 
 @app.route('/wiki/<page>/edit', methods=['GET', 'POST'])
 def edit_page(page):
-    if 'username' not in session:
-        return redirect(url_for('login'))
     path = os.path.join(PAGES_DIR, f'{page}.md')
+    # Check if page is locked
+    lockfile = os.path.join(PAGES_DIR, '.locked_pages')
+    locked_pages = set()
+    if os.path.exists(lockfile):
+        with open(lockfile, 'r') as f:
+            locked_pages = set(line.strip() for line in f if line.strip())
+    if page in locked_pages and not session.get('is_admin'):
+        flash('This page is locked by admin. Only admin can edit.')
+        return redirect(url_for('view_page', page=page))
     if request.method == 'POST':
         with open(path, 'w') as f:
             f.write(request.form['content'])
@@ -92,7 +99,7 @@ def edit_page(page):
     if os.path.exists(path):
         with open(path, 'r') as f:
             content = f.read()
-    return render_template('edit.html', page=page, content=content, username=session['username'])
+    return render_template('edit.html', page=page, content=content)
 
 if __name__ == '__main__':
     app.run(debug=True)

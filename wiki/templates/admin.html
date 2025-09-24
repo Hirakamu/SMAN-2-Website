@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel - SMAN-2 Wiki</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .admin-card {
+            background: linear-gradient(135deg, #e0e7ff 0%, #f9fafb 100%);
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(42,77,124,0.12);
+            padding: 2em;
+            margin: 2em auto;
+            max-width: 600px;
+            text-align: center;
+        }
+        .admin-title {
+            font-size: 2.5em;
+            color: #2a4d7c;
+            margin-bottom: 0.2em;
+            letter-spacing: 2px;
+        }
+        .admin-btn {
+            background: #2a4d7c;
+            color: #fff;
+            border: none;
+            padding: 0.7em 1.5em;
+            border-radius: 8px;
+            font-size: 1em;
+            margin: 0.5em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .admin-btn:hover {
+            background: #1a3555;
+        }
+        .mod-section {
+            margin-top: 2em;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(42,77,124,0.08);
+            padding: 1.5em;
+        }
+        .page-list {
+            text-align: left;
+            margin: 1em auto;
+            max-width: 400px;
+        }
+        .page-list li {
+            margin-bottom: 0.7em;
+            padding: 0.5em 0.7em;
+            background: #f3f6fa;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .lock-btn {
+            background: #eab308;
+            color: #222;
+            border: none;
+            border-radius: 6px;
+            padding: 0.3em 0.8em;
+            font-size: 0.95em;
+            cursor: pointer;
+            margin-left: 1em;
+        }
+        .lock-btn.locked {
+            background: #ef4444;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-card">
+        <div class="admin-title">👑 Admin Panel</div>
+        <p style="font-size:1.2em;">Welcome, <b>admin</b>!<br>
+        You have the power to shape the wiki.<br>
+        <span style="color:#eab308;font-weight:bold;">Moderate, lock, and manage pages below.</span>
+        </p>
+        <a href="{{ url_for('admin_logout') }}"><button class="admin-btn">Logout</button></a>
+        <a href="{{ url_for('index') }}"><button class="admin-btn">Go to Wiki</button></a>
+
+        <div class="mod-section">
+            <h2 style="color:#2a4d7c;">🛡️ Moderation Tools</h2>
+            <ul class="page-list">
+            {% for page in pages %}
+                <li>
+                    <span>{{ page }}</span>
+                    <form method="post" action="{{ url_for('admin') }}" style="display:inline;">
+                        <input type="hidden" name="page" value="{{ page }}">
+                        <button type="submit" class="lock-btn {% if locked_pages and page in locked_pages %}locked{% endif %}">
+                            {% if locked_pages and page in locked_pages %}Unlock{% else %}Lock{% endif %}
+                        </button>
+                    </form>
+                </li>
+            {% else %}
+                <li style="text-align:center;color:#888;">No pages yet.</li>
+            {% endfor %}
+            </ul>
+            <p style="font-size:0.95em;color:#888;">Locking a page prevents public editing. Unlock to allow edits.</p>
+        </div>
+    </div>
+</body>
+</html>
