@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ page }} - Wiki</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>{{ page }}</h1>
+    <div>{{ content|safe }}</div>
+    <a href="{{ url_for('edit_page', page=page) }}">Edit</a> |
+    <a href="{{ url_for('index') }}">Home</a>
+</body>
+</html>

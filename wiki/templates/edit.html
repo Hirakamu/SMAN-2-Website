@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit {{ page }} - Wiki</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Edit {{ page }}</h1>
+    <form method="post">
+        <textarea name="content" rows="20" cols="80">{{ content }}</textarea><br>
+        <button type="submit">Save</button>
+    </form>
+    <a href="{{ url_for('view_page', page=page) }}">Cancel</a>
+</body>
+</html>
