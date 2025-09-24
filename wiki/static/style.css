@@ -1,0 +1,9 @@
+body { font-family: Arial, sans-serif; background: #f9f9f9; color: #222; margin: 2em; }
+h1 { color: #2a4d7c; }
+a { color: #2a4d7c; text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul { list-style: none; padding: 0; }
+li { margin-bottom: 0.5em; }
+textarea { width: 100%; font-family: monospace; }
+button { background: #2a4d7c; color: #fff; border: none; padding: 0.5em 1em; border-radius: 4px; cursor: pointer; }
+button:hover { background: #1a3555; }
