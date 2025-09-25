@@ -1,0 +1,35 @@
+# My Flask App
+
+## Overview
+This project is a Flask web application designed to provide a user-friendly interface for managing various functionalities. It includes features for user authentication, admin management, and content editing.
+
+## Project Structure
+- **app.py**: The main application file that initializes the Flask app and defines the routes.
+- **nginx.conf**: Configuration file for the Nginx web server to serve the Flask application.
+- **readme**: General information about the project and setup instructions.
+- **README_INIT.txt**: Initial setup instructions for getting started with the project.
+- **wsgi.py**: WSGI entry point for serving the Flask application.
+- **static/style.css**: CSS styles for the application.
+- **templates/**: Contains HTML templates for various pages, including:
+  - admin_login.html
+  - admin.html
+  - edit.html
+  - index.html
+  - landing.html
+  - login.html
+  - profile.html
+  - register.html
+  - view.html
+- **README.md**: Documentation for the project, including setup instructions and usage.
+
+## Getting Started
+1. Clone the repository to your local machine.
+2. Install the required dependencies using `pip install -r requirements.txt`.
+3. Configure the Nginx server using the provided `nginx.conf`.
+4. Run the application using `python app.py` or through a WSGI server.
+
+## Contributing
+Contributions are welcome! Please submit a pull request or open an issue for any enhancements or bug fixes.
+
+## License
+This project is licensed under the MIT License. See the LICENSE file for details.
