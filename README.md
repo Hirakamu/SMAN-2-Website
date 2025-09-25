@@ -1,3 +1,4 @@
+*all of this were created by AI, dont get misunderstood*
 # 📘 Prototipe Website SMAN 2 Cikarang Pusat
 
 ## 🏫 Tentang Sekolah
