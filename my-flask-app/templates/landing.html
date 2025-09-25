@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Landing Page</title>
+</head>
+<body>
+    <header>
+        <h1>Welcome to My Flask App</h1>
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+                <li><a href="{{ url_for('register') }}">Register</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section>
+            <h2>About Us</h2>
+            <p>This is a simple Flask application designed to demonstrate the capabilities of the framework.</p>
+        </section>
+        <section>
+            <h2>Features</h2>
+            <ul>
+                <li>User authentication</li>
+                <li>Admin dashboard</li>
+                <li>Content management</li>
+            </ul>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2023 My Flask App. All rights reserved.</p>
+    </footer>
+</body>
+</html>
