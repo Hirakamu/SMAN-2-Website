@@ -3,6 +3,6 @@
 - [wiki](/wiki/) | *AI-ed* | First prototype builded using flask, still storing web route in a single file, not reliable.
 - [wikiv2](./wikiv2/) | Duplicated from first prototype, had a lot of changes going around there.
 - [wiki-php](/wiki-php/) | *AI-ed* | Transform the whole website structure into PHP through Nginx.
-- [wordpress](/wordpress/) and [wiki_wordpress](/wikiv2_wordpress/) | *AI-ed* | Duplicated from [wiki-php](/wiki-php/) and using Wordpress for the engine.
+- [wiki_wordpress](/wikiv2_wordpress/) | *AI-ed* | Duplicated from [wiki-php](/wiki-php/) and using Wordpress for the engine.
 - [my-flask-app](/my-flask-app/) | *AI-ed* | i dont know.
 - [article-website](/article-website/) | *AI-ed* | **(Working on)** start from scratch, using separated routing configuration for ease.
