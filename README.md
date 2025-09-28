@@ -6,3 +6,7 @@
 - [wiki_wordpress](/wikiv2_wordpress/) | *AI-ed* | Duplicated from [wiki-php](/wiki-php/) and using Wordpress for the engine.
 - [my-flask-app](/my-flask-app/) | *AI-ed* | i dont know.
 - [article-website](/article-website/) | *AI-ed* | **(Working on)** start from scratch, using separated routing configuration for ease.
+
+## Contributing for the prototype
+
+- Any contributor can help us to develop and improve the prototype. Any contributions will be credited.
