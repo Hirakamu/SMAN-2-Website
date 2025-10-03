@@ -6,6 +6,7 @@
 - [wiki_wordpress](/wikiv2_wordpress/) | *AI-ed* | Duplicated from [wiki-php](/wiki-php/) and using Wordpress for the engine.
 - [my-flask-app](/my-flask-app/) | *AI-ed* | i dont know.
 - [article-website](/article-website/) | *AI-ed* | **(Working on)** start from scratch, using separated routing configuration for ease.
+- [static](/static/) | Restarted from everything, starting with a static html with native JS, using custom API handles.
 
 ## Contributing for the prototype
 
