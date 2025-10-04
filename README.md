@@ -7,6 +7,8 @@
 - [my-flask-app](/my-flask-app/) | *AI-ed* | i dont know.
 - [article-website](/article-website/) | *AI-ed* | **(Working on)** start from scratch, using separated routing configuration for ease.
 - [static](/static/) | Restarted from everything, starting with a static html with native JS, using custom API handles.
+- [static2](/static2/) | *AI-ed* | Generated from AI, same concept from [static](/static/)
+- [scratch](/scratch/) | My playground
 
 ## Contributing for the prototype
 
