@@ -12,4 +12,4 @@
 
 ## Contributing for the prototype
 
-- Any contributor can help us to develop and improve the prototype. Any contributions will be credited.
+- Any contributor can help us to develop and improve the prototype.
