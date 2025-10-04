@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Artikel — SMAN 2 Cikarang Pusat</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">SMAN 2 Cikarang Pusat</div>
+      <nav>
+        <a href="index.html">Beranda</a>
+        <a href="profile.html">Profil Sekolah</a>
+        <a href="index.html#berita">Berita</a>
+        <a href="index.html#prestasi">Prestasi</a>
+        <a href="login.html" id="login-btn">Login/Register</a>
+      </nav>
+    </header>
+
+    <main style="max-width:900px;margin:36px auto">
+      <article id="article-root">
+        <h1 id="art-title">Loading…</h1>
+        <div class="meta" id="art-meta" style="color:var(--muted);margin-bottom:12px"></div>
+        <div id="art-content" style="white-space:pre-wrap"></div>
+      </article>
+      <div id="notfound" style="display:none;color:#f88;margin-top:24px">Artikel tidak ditemukan.</div>
+    </main>
+
+    <footer style="text-align:center;margin:40px 0">© <span id="year"></span> SMAN 2 Cikarang Pusat</footer>
+  </div>
+
+  <script src="app.js" defer></script>
+  <script src="article.js" defer></script>
+</body>
+</html>
