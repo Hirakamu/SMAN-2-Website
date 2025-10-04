@@ -56,24 +56,23 @@ document.addEventListener('click', e=>{
   target.animate([{transform:'scale(1)'},{transform:'scale(0.995)'}],{duration:120,iterations:1});
 });
 
-// ping check
-pingBtn.addEventListener('click', () => {
-  pingStatus.textContent = 'Connection: Loading…';
+// auto ping on load (no manual controls)
+async function runPing() {
+  if (!pingStatus) return;
+  pingStatus.textContent = 'Connection: Loading';
+  const target = 'http://localhost:5000/ping';
+  try {
+    const res = await fetch(target, { method: 'GET', credentials: 'include' });
+    try {
+      const data = await res.json();
+      pingStatus.textContent = `Connection: Reachable (${res.status}) — ${data && data.status ? data.status : 'ok'}`;
+    } catch {
+      pingStatus.textContent = `Connection: Reachable (${res.status}) — response blocked`;
+    }
+  } catch (err) {
+    console.error('ping error', err);
+    pingStatus.textContent = 'Connection: Failed (browser blocked or server unreachable)';
+  }
+}
 
-  fetch('http://localhost:5000/ping')  // change host:port if needed
-    .then(async res => {
-      // try to parse JSON if browser lets us
-      try {
-        const data = await res.json();
-        pingStatus.textContent = `Connection: Reachable (${res.status}) — ${data.status}`;
-      } catch {
-        // if blocked by CORS, you still get here but body unusable
-        pingStatus.textContent = `Connection: Reachable (${res.status}) — response blocked`;
-      }
-    })
-    .catch(err => {
-      // If totally failed (e.g. server down, mixed content)
-      console.error(err);
-      pingStatus.textContent = 'Connection: Failed (browser blocked or server unreachable)';
-    });
-});
+window.addEventListener('DOMContentLoaded', runPing);
