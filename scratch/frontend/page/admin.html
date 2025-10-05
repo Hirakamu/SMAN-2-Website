@@ -1,0 +1,335 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+        }
+
+        h2 {
+            margin-top: 30px;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        input {
+            padding: 5px;
+            margin: 5px 0;
+            display: block;
+            width: 250px;
+        }
+
+        button {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        #adminSection,
+        #editorSection {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin: 10px 0;
+            background: #fff;
+        }
+
+        #userInfo {
+            white-space: pre-wrap;
+            background: #eee;
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <header id="header"></header>
+    <h1>Admin Panel</h1>
+
+    <div id="authForms">
+        <h2>Register</h2>
+        <form id="registerForm">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Register</button>
+        </form>
+
+        <h2>Login</h2>
+        <form id="loginForm">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <div id="panel" style="display:none;">
+        <h2>Welcome <span id="usernameDisplay"></span></h2>
+        <button id="logoutBtn">Logout</button>
+
+        <div id="adminSection" style="display:none;">
+            <h3>Admin Section</h3>
+            <p>Only visible to users with admin role.</p>
+        </div>
+
+        <div id="editorSection" style="display:none;">
+            <h3>Editor Section</h3>
+            <p>Visible to any logged-in user.</p>
+        </div>
+    </div>
+    <script src="../assets/js/layout.js"></script>
+    <script>
+        const backendURL = "http://localhost:5000"; // change if needed
+
+        let currentUser = null;
+
+        // ---------------- Register ----------------
+        document.getElementById("registerForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const data = {
+                username: e.target.username.value,
+                email: e.target.email.value,
+                password: e.target.password.value
+            };
+            try {
+                const res = await fetch(`${backendURL}/request_register/`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                    credentials: "include"
+                });
+                const json = await res.json();
+                if (res.ok) {
+                    alert("Registered and logged in!");
+                    await checkSession();
+                } else {
+                    alert(json.error);
+                }
+            } catch (err) { console.error(err); }
+        });
+
+        // ---------------- Login ----------------
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const data = {
+                username: e.target.username.value,
+                password: e.target.password.value
+            };
+            try {
+                const res = await fetch(`${backendURL}/request_login/`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                    credentials: "include"
+                });
+                const json = await res.json();
+                if (res.ok) {
+                    alert("Logged in!");
+                    await checkSession();
+                } else {
+                    alert(json.error);
+                }
+            } catch (err) { console.error(err); }
+        });
+
+        // ---------------- Logout ----------------
+        document.getElementById("logoutBtn").addEventListener("click", async () => {
+            try {
+                const res = await fetch(`${backendURL}/logout/`, {
+                    method: "POST",
+                    credentials: "include"
+                });
+                alert("Logged out");
+                currentUser = null;
+                updateUI();
+            } catch (err) { console.error(err); }
+        });
+
+        // ---------------- Check Current Session ----------------
+        async function checkSession() {
+            try {
+                const res = await fetch(`${backendURL}/me/`, {
+                    method: "GET",
+                    credentials: "include"
+                });
+                if (res.ok) {
+                    const json = await res.json();
+                    currentUser = { username: json.username, role: json.role };
+                } else {
+                    currentUser = null;
+                }
+                updateUI();
+            } catch (err) { console.error(err); }
+        }
+
+        // ---------------- Update UI ----------------
+        function updateUI() {
+            if (currentUser) {
+                document.getElementById("authForms").style.display = "none";
+                document.getElementById("panel").style.display = "block";
+                document.getElementById("usernameDisplay").innerText = currentUser.username;
+                document.getElementById("editorSection").style.display = "block";
+                document.getElementById("adminSection").style.display = currentUser.role === "admin" ? "block" : "none";
+            } else {
+                document.getElementById("authForms").style.display = "block";
+                document.getElementById("panel").style.display = "none";
+            }
+        }
+
+        // Initialize on page load
+        checkSession();
+    </script>
+</body>
+
+</html> 
+<!-- make me a login and register page from this code, after the login/register i want to go to me.html page 
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login & Register</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+        }
+
+        .flex-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        input {
+            padding: 10px;
+            margin: 10px 0;
+            display: block;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 10px;
+            width: 100%;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .toggle-link {
+            text-align: center;
+            margin-top: 10px;
+            cursor: pointer;
+            color: #007bff;
+        }
+
+        .toggle-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <header></header>
+    <div class="flex-wrapper">
+        <div class="container">
+            <h2 id="formTitle">Login</h2>
+            <form id="authForm">
+                <input type="text" id="username" placeholder="Username" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <input type="email" id="email" placeholder="Email" style="display:none;" required>
+                <button type="submit" id="submitButton">Login</button>
+            </form>
+            <div class="toggle-link" id="toggleLink">Don't have an account? Register</div>
+        </div>
+    </div>
+    <script src="../assets/js/layout.js"></script>
+    <script>
+        const backendURL = "http://localhost:5000"; // change if needed
+        let isLogin = true;
+
+        const formTitle = document.getElementById("formTitle");
+        const authForm = document.getElementById("authForm");
+        const emailInput = document.getElementById("email");
+        const submitButton = document.getElementById("submitButton");
+        const toggleLink = document.getElementById("toggleLink");
+
+        toggleLink.addEventListener("click", () => {
+            isLogin = !isLogin;
+            if (isLogin) {
+                formTitle.innerText = "Login";
+                emailInput.style.display = "none";
+                submitButton.innerText = "Login";
+                toggleLink.innerText = "Don't have an account? Register";
+            } else {
+                formTitle.innerText = "Register";
+                emailInput.style.display = "block";
+                submitButton.innerText = "Register";
+                toggleLink.innerText = "Already have an account? Login";
+            }
+        });
+
+        authForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            const email = emailInput.value;
+
+            const data = isLogin ? { username, password } : { username, password, email };
+            const endpoint = isLogin ? "/request_login/" : "/request_register/";
+
+            try {
+                const res = await fetch(`${backendURL}${endpoint}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                    credentials: "include"
+                });
+                const json = await res.json();
+                if (res.ok) {
+                    alert(isLogin ? "Logged in!" : "Registered and logged in!");
+                    window.location.href = "me.html"; // Redirect to me.html after login/register
+                } else {
+                    alert(json.error);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+    </script>
+</body>
+
+</html>
