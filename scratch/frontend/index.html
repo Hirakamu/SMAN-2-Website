@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>SMAN 2 Cikarang Pusat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <h1>SMAN 2 Cikarang Pusat</h1>
+        <nav>
+            <ul>
+                <li><a href="#home">Beranda</a></li>
+                <li><a href="#articles">Artikel</a></li>
+                <li><a href="#about">Tentang Sekolah</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Main content -->
+    <main>
+        <!-- Hero / Intro -->
+        <section id="home">
+            <h1>Rekomendasi Artikel</h1>
+            <hr>
+            <br>
+            <div id="article-list">
+                <!-- JS will inject posts here -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 My Website</p>
+    </footer>
+
+
+    <script>
+        let backendurl = "http://localhost:5000";
+        async function articleFeatures() {
+            let container = document.getElementById("article-list");
+            container.innerHTML = "<p>Loading...</p>";
+            try {
+                let res = await fetch(`${backendurl}/post/`);
+                if (!res.ok) { throw new Error(`HTTP error ${res.status}`); }
+                let data = await res.json();
+                container.innerHTML = "";
+                data.forEach(article => {
+                    let div = document.createElement("div");
+                    div.className = "article";
+                    div.innerHTML = `
+        <h3><a href="./baca.html?title=${article.title.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}">${article.title}</a></h3>
+        <p>${article.preview}</p>
+        <br>
+        <hr>
+        <br>
+      `;
+                    container.appendChild(div);
+                });
+            } catch (err) {
+                container.innerHTML = `<p style="color:red;">Failed to load articles: ${err.message}</p>`;
+                console.error("Error loading articles:", err);
+            }
+        }
+        // run when page loads
+        window.onload = articleFeatures;
+    </script>
+</body>
+
+</html>

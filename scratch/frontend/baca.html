@@ -1,0 +1,46 @@
+<!-- baca.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="title">SMAN 2 Cikarang Pusat</title>
+</head>
+
+<body>
+    <div id="article-container">
+        <p id="article-body">Loading...</p>
+    </div>
+
+    <script>
+        const backendurl = "http://localhost:5000";
+
+        async function loadArticle() {
+            const params = new URLSearchParams(window.location.search);
+            const titleSlug = params.get("title");
+            if (!titleSlug) {
+                document.getElementById("article-title").textContent = "Missing title parameter";
+                document.getElementById("article-body").innerHTML = "";
+                return;
+            }
+
+            try {
+                const res = await fetch(`${backendurl}/post/baca?title=${encodeURIComponent(titleSlug)}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const article = await res.json();
+
+                document.getElementById("title").textContent = article.title + " - SMAN 2 Cikarang Pusat";
+                document.getElementById("article-body").innerHTML = article.html;
+            } catch (err) {
+                document.getElementById("article-title").textContent = "Failed to load article";
+                document.getElementById("article-body").textContent = err.message;
+                console.error(err);
+            }
+        }
+
+        loadArticle();
+    </script>
+</body>
+
+</html>
