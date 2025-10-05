@@ -4,70 +4,95 @@
 <head>
     <meta charset="UTF-8">
     <title>SMAN 2 Cikarang Pusat</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Main & Section */
+        main {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f9f9f9;
+            padding: 40px 20px;
+        }
+
+        section#home {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        section#home h1 {
+            font-size: 2.2rem;
+            color: #222;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        section#home hr {
+            border: none;
+            height: 2px;
+            background: #4caf50;
+            width: 60px;
+            margin: 0 auto 20px auto;
+        }
+
+        /* Article list */
+        #article-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        /* Each article card */
+        #article-list .article-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #article-list .article-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Article image */
+        #article-list .article-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+
+        /* Article text */
+        #article-list .article-card h3 {
+            font-size: 1.2rem;
+            color: #333;
+            margin: 15px 20px 10px 20px;
+        }
+
+        #article-list .article-card p {
+            font-size: 0.95rem;
+            color: #555;
+            line-height: 1.5;
+            margin: 0 20px 20px 20px;
+        }
+    </style>
 </head>
 
 <body>
-    <header>
-        <h1>SMAN 2 Cikarang Pusat</h1>
-        <nav>
-            <ul>
-                <li><a href="#home">Beranda</a></li>
-                <li><a href="#articles">Artikel</a></li>
-                <li><a href="#about">Tentang Sekolah</a></li>
-            </ul>
-        </nav>
-    </header>
+    <header id="header"></header>
 
-    <!-- Main content -->
     <main>
-        <!-- Hero / Intro -->
         <section id="home">
-            <h1>Rekomendasi Artikel</h1>
+            <h1>Berita terbaru</h1>
             <hr>
-            <br>
-            <div id="article-list">
-                <!-- JS will inject posts here -->
-            </div>
+            <div id="article-list"></div>
         </section>
     </main>
 
-    <!-- Footer -->
-    <footer>
-        <p>&copy; 2025 My Website</p>
-    </footer>
+    <footer id="footer"></footer>
 
-
-    <script>
-        let backendurl = "http://localhost:5000";
-        async function articleFeatures() {
-            let container = document.getElementById("article-list");
-            container.innerHTML = "<p>Loading...</p>";
-            try {
-                let res = await fetch(`${backendurl}/post/`);
-                if (!res.ok) { throw new Error(`HTTP error ${res.status}`); }
-                let data = await res.json();
-                container.innerHTML = "";
-                data.forEach(article => {
-                    let div = document.createElement("div");
-                    div.className = "article";
-                    div.innerHTML = `
-        <h3><a href="./baca.html?title=${article.title.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}">${article.title}</a></h3>
-        <p>${article.preview}</p>
-        <br>
-        <hr>
-        <br>
-      `;
-                    container.appendChild(div);
-                });
-            } catch (err) {
-                container.innerHTML = `<p style="color:red;">Failed to load articles: ${err.message}</p>`;
-                console.error("Error loading articles:", err);
-            }
-        }
-        // run when page loads
-        window.onload = articleFeatures;
-    </script>
+    <!-- <script src="./assets/js/app.js"></script> -->
+    <script src="./assets/js/layout.js"></script>
+    <script src="./assets/js/hira.sman2.frmwrk.js"></script>
+    <script>articleFeatures();</script>
 </body>
 
 </html>
