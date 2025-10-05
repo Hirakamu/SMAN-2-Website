@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Markdown Editor</title>
+<style>
+  body { display: flex; gap: 20px; padding: 20px; font-family: sans-serif; }
+  textarea { width: 50%; height: 80vh; }
+  #preview { width: 50%; height: 80vh; border: 1px solid #ccc; padding: 10px; overflow: auto; }
+</style>
+</head>
+<body>
+
+<textarea id="editor" placeholder="Type your markdown here..."></textarea>
+<div id="preview"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+const editor = document.getElementById('editor');
+const preview = document.getElementById('preview');
+
+let timeoutId;
+
+editor.addEventListener('input', () => {
+  // Render HTML preview
+  preview.innerHTML = marked.parse(editor.value);
+
+  // Debounced autosave (1 sec after last change)
+  clearTimeout(timeoutId);
+  timeoutId = setTimeout(() => {
+    fetch('localhost:5000/save-page', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: editor.value })
+    }).then(res => res.json())
+      .then(data => console.log('Autosaved', data))
+      .catch(err => console.error(err));
+  }, 100);
+});
+</script>
+
+</body>
+</html>
