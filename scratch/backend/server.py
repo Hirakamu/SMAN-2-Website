@@ -35,11 +35,13 @@ def dbAuthInit():
     )''')
     conn.commit()
     conn.close()
+    
 def unSpace(text):
     text = text.strip().lower()
     text = re.sub(r'\s+', '-', text)
     text = re.sub(r'[^a-z0-9-]', '', text)
     return text
+
 def sessionCreate(user_id):
     token = secrets.token_urlsafe(32)
     conn = sqlite3.connect(AUTHDB)
@@ -48,6 +50,7 @@ def sessionCreate(user_id):
     conn.commit()
     conn.close()
     return token
+
 def getUsername(username):
     conn = sqlite3.connect(AUTHDB)
     c = conn.cursor()
@@ -55,6 +58,7 @@ def getUsername(username):
     row = c.fetchone()
     conn.close()
     return row
+
 def getEmail(email):
     conn = sqlite3.connect(AUTHDB)
     c = conn.cursor()
@@ -62,6 +66,7 @@ def getEmail(email):
     row = c.fetchone()
     conn.close()
     return row
+
 def getToken(token):
     conn = sqlite3.connect(AUTHDB)
     c = conn.cursor()
@@ -122,6 +127,7 @@ def login():
     resp = make_response(jsonify({"message": "Logged in successfully"}))
     resp.set_cookie("session_token", token, httponly=True, samesite='Strict')
     return resp
+
 @app.route("/me/", methods=["GET"])
 def me():
     token = request.cookies.get("session_token")
@@ -131,6 +137,7 @@ def me():
     if not user_id:
         return jsonify({"error": "Invalid session"}), 401
     return jsonify({"user_id": user_id})
+
 @app.route("/logout/", methods=["POST"])
 def logout():
     token = request.cookies.get("session_token")
@@ -143,9 +150,11 @@ def logout():
     resp = make_response(jsonify({"message": "Logged out"}))
     resp.delete_cookie("session_token")
     return resp
+
 @app.route("/post/")
 def posts():
     return "Backend in maintenance mode", 503
+
 @app.route("/post/baca")
 def readarticle():
     return "Backend in maintenance mode", 503
