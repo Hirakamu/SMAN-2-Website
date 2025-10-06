@@ -2,8 +2,8 @@ async function initPage() {
   // =====================
   // Backend URL
   // =====================
-  const backendurl = "http://192.168.18.2:5000";
-
+  //const backendurl = "http://localhost:5000"; // development
+  const backendurl = "https://api.sman2cikpus.sch.id"; // production
   // =====================
   // Header/Footer Templates
   // =====================
