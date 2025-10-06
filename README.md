@@ -16,4 +16,4 @@
 
 - Any contributor can help us to develop and improve the prototype.
 
-- See my to-do list for more specific contributions.
+- See my [to-do list](todo.md) for more specific contributions.
