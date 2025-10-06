@@ -1,4 +1,4 @@
-# SMAN 2 Cikarang Pusat Article's Web Design Prototype Repository
+# SMAN 2 Cikarang Pusat Article's Web Structure Repository
 
 - *Archived* [wiki](/wiki/) | *AI-ed* | First prototype builded using flask, still storing web route in a single file, not reliable.
 - *Archived* [wikiv2](./wikiv2/) | Duplicated from first prototype, had a lot of changes going around there.
