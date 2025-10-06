@@ -42,7 +42,7 @@ def unSpace(text):
 
 @app.route("/rand/")
 def posts():
-    latest_posts = articles_list[:10]
+    latest_posts = articles_list[:9]
 
     data = []
     for post in latest_posts:
