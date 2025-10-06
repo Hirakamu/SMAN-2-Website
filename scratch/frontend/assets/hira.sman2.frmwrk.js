@@ -1,15 +1,13 @@
 async function initPage() {
-  // =====================
-  // Backend URL
-  // =====================
-  
+
   const backendurl = "http://localhost:5000"; //development
   // const backendurl = "https://api.sman2cikpus.sch.id"; //production
-
-  // =====================
-  // Header/Footer Templates
-  // =====================
-  const headerHTML = `
+  
+  // edit in hira.sman2.style.css
+  document.head.appendChild(Object.assign(document.createElement("style"), {textContent: await fetch(`${backendurl}/assets/hira.sman2.style.css`).then(r => r.text())}));
+  
+  // elements template
+  if (document.querySelector('header')) document.querySelector('header').innerHTML =/*html*/`
     <header>
       <h1>SMAN 2 Cikarang Pusat</h1>
       <nav>
@@ -22,63 +20,54 @@ async function initPage() {
       </nav>
     </header>
   `;
-  const footerHTML = `<footer>&copy; ${new Date().getFullYear()} SMAN 2 Cikarang Pusat</footer>`;
+  if (document.querySelector('footer')) document.querySelector('footer').innerHTML = /*html*/`
+    <footer>
+      <h6 style='color: red;'>UNRELEASED</h6>
+      <h4>
+        SMAN 2 Cikarang Pusat. Moving For Bright Future
+        <br>
+        <a href="https://github.com/hirakamu">@Hirakamu</a>
+      </h4>
+    </footer>
+  `;
 
-  const headerEl = document.querySelector('header');
-  const footerEl = document.querySelector('footer');
-  if (headerEl) headerEl.innerHTML = headerHTML;
-  if (footerEl) footerEl.innerHTML = footerHTML;
-
-  // =====================
-  // Article Loader
-  // =====================
+  // functions
   async function articleFeatures() {
     const container = document.getElementById("article-list");
     if (!container) return;
     container.innerHTML = "<p>Loading...</p>";
-
     try {
       const res = await fetch(`${backendurl}/rand/`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const articles = await res.json(); // <-- assume backend sends JSON [{title, content, img?}, ...]
-      container.innerHTML = ''; // clear loading
-
+      const articles = await res.json();
+      container.innerHTML = '';
       articles.forEach(article => {
         const link = document.createElement('a');
         link.href = `baca.html?title=${encodeURIComponent(article.title)}`;
-        link.className = 'article-card';  // apply same card styles
-        link.innerHTML = `${article.img ? `<img src="${article.img}" alt="${article.title}">` : ''}<h3>${article.title}</h3><p>${article.content}</p>
-`;
+        link.className = 'article-card';
+        link.innerHTML = `${article.img ? `<img src="${article.img}" alt="${article.title}">` : ''}<h3>${article.title}</h3><p>${article.content}</p>`;
         container.appendChild(link);
       });
-
     } catch (err) {
       container.innerHTML = `<h2 style="color:red;">Failed to load articles: ${err.message}</h2>`;
       console.error(err);
     }
   }
-
   async function readArticle() {
     const container = document.getElementById("article-content");
     if (!container) return;
     container.innerHTML = "<p>Loading...</p>";
-
-    // get ?title=... from URL
     const params = new URLSearchParams(window.location.search);
     const title = params.get("title");
     if (!title) {
       container.innerHTML = "<h2 style='color:red;'>No article selected</h2>";
       return;
     }
-
     try {
       const { marked } = await import("https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js");
-
       const res = await fetch(`${backendurl}/baca?title=${encodeURIComponent(title)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const article = await res.json(); // {title, date, content, img}
+      const article = await res.json();
       container.innerHTML = `
       <h1>${article.title}</h1>
       <small>${article.date}</small>
@@ -86,7 +75,6 @@ async function initPage() {
       ${article.img ? `<img src="${article.img}" alt="${article.title}" style="max-width:100%;">` : ""}
       <div class="content">${marked.parse(article.content)}</div>
     `;
-      // note: marked.js (https://marked.js.org/) or similar needed if you want Markdown → HTML in browser
 
     } catch (err) {
       container.innerHTML = `<h2 style="color:red;">Failed to load article: ${err.message}</h2>`;
@@ -94,14 +82,10 @@ async function initPage() {
     }
   }
 
-  // =====================
-  // Expose globally
-  // =====================
   window.articleFeatures = articleFeatures;
   window.readArticle = readArticle;
 }
 
-// Run when DOM ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => initPage().then(() => articleFeatures()));
 } else {
