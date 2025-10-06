@@ -11,6 +11,9 @@
 - *Archived* [scratch](/scratch/) | making custom framework, treat html like PHP, flexible host method.
 - **Current Development** [sman2cikpus](/sman2cikpus/) | cloned from [scratch](/scratch/), this will be final prototype, and soon to be published.
 
+
 ## Contributing for the prototype
 
 - Any contributor can help us to develop and improve the prototype.
+
+- See my to-do list for more specific contributions.
