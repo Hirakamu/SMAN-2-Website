@@ -8,7 +8,8 @@
 - *Archived* [article-website](/article-website/) | *AI-ed* | **(Working on)** start from scratch, using separated routing configuration for ease.
 - *Archived* [static](/static/) | Restarted from everything, starting with a static html with native JS, using custom API handles.
 - *Archived* [static2](/static2/) | *AI-ed* | Generated from AI, same concept from [static](/static/)
-- **Current development** [scratch](/scratch/) | making custom framework, treat html like PHP, flexible host method.
+- *Archived* [scratch](/scratch/) | making custom framework, treat html like PHP, flexible host method.
+- **Current Development** [sman2cikpus](/sman2cikpus/) | cloned from [scratch](/scratch/), this will be final prototype, and soon to be published.
 
 ## Contributing for the prototype
 
