@@ -1,1 +1,0 @@
-WordPress version of wikiv2. To use, copy the theme files into your WordPress installation's wp-content/themes directory, or use the plugin files as needed.
