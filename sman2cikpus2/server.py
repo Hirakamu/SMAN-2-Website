@@ -43,6 +43,14 @@ class DB:
         """)
         db.execute("CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles(slug)")
         db.commit()
+    
+    def reset(self):
+        if Path(self.dbFile).exists():
+            Path(self.dbFile).unlink()  # delete DB file
+        # clear any lingering connection in g
+        if hasattr(g, "_db"):
+            g._db = None
+        self.initSchema()
 
 DBase = DB(DB_FILE)
 
@@ -272,6 +280,13 @@ def articlePage(page: int, q: str = ""):
 @app.route("/admin/import")
 def importPage():
     force = str(request.args.get("force", "")).lower() in ("1", "true", "yes")
+    inserted = importArticles(force=force)
+    return jsonify({"inserted": inserted, "force": force})
+
+@app.route("/admin/reset")
+def resetPage():
+    force = str(request.args.get("force", "")).lower() in ("1", "true", "yes")
+    DBase.reset()
     inserted = importArticles(force=force)
     return jsonify({"inserted": inserted, "force": force})
 
