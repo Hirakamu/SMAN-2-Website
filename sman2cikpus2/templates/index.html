@@ -4,17 +4,17 @@
 <h1>Articles</h1>
 <div class="pager">
   {% if page > 1 %}
-    <a href="{{ url_for('index', page=page-1, q=q) }}">Previous</a>
+    <a href="{{ url_for('home', page=page-1, q=q) }}">Previous</a>
   {% endif %}
   <span>Page {{ page }}</span>
   {% if total > page * 10 %}
-    <a href="{{ url_for('index', page=page+1, q=q) }}">Next</a>
+    <a href="{{ url_for('home', page=page+1, q=q) }}">Next</a>
   {% endif %}
 </div>
 <ul class="articles">
   {% for a in articles %}
   <li class="article-item">
-    <h2><a href="{{ url_for('article_page', slug=a.slug) }}">{{ a.title }}</a></h2>
+    <h2><a href="{{ url_for('read', slug=a.slug) }}">{{ a.title }}</a></h2>
     <p class="meta">{{ a.created }}</p>
     <p class="snippet">{{ a.snippet }}</p>
   </li>
@@ -23,11 +23,11 @@
 
 <div class="pager">
   {% if page > 1 %}
-    <a href="{{ url_for('index', page=page-1, q=q) }}">Previous</a>
+    <a href="{{ url_for('home', page=page-1, q=q) }}">Previous</a>
   {% endif %}
   <span>Page {{ page }}</span>
   {% if total > page * 10 %}
-    <a href="{{ url_for('index', page=page+1, q=q) }}">Next</a>
+    <a href="{{ url_for('home', page=page+1, q=q) }}">Next</a>
   {% endif %}
 </div>
 {% endblock %}

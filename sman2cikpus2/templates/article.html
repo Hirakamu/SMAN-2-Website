@@ -5,6 +5,6 @@
   <h1>{{ article.title }}</h1>
   <p class="meta">{{ article.created }}</p>
   <div class="content">{{ article.content_html | safe }}</div>
-  <p><a href="{{ url_for('index') }}">Back to list</a></p>
+  <p><a href="{{ url_for('home') }}">Back to list</a></p>
 </article>
 {% endblock %}
