@@ -1,50 +1,54 @@
 # server.py
-import re, sqlite3, hashlib
+import re, sqlite3, hashlib, markdown
 from functools import lru_cache
 from datetime import datetime, timezone
 from pathlib import Path
+from flask import Flask, g, render_template, request, jsonify, abort
 
-from flask import (
-    Flask, g, render_template, request, redirect, url_for, jsonify, abort
-)
-import markdown
+ROOT = Path(__file__).parent
+DB_FILE = ROOT / "articles.db"
+PAGEDIR = ROOT / "articles"
+PAGESHOW = 10
+PAGEPREVIEW = 500
 
-APP_ROOT = Path(__file__).parent
-DB_FILE = APP_ROOT / "articles.db"
-ARTIKEL_DIR = APP_ROOT / "articles"
-PER_PAGE = 10
-SNIPPET_LENGTH = 200
-
-app = Flask(__name__, static_folder=str(APP_ROOT / "static"), template_folder=str(APP_ROOT / "templates"))
+app = Flask(__name__, static_folder=str(ROOT / "static"), template_folder=str(ROOT / "templates"))
 app.config["JSON_SORT_KEYS"] = False
 
-# ---------------- DB helpers ----------------
-def get_db():
-    db = getattr(g, "_db", None)
-    if db is None:
-        db = sqlite3.connect(str(DB_FILE))
-        db.row_factory = sqlite3.Row
-        g._db = db
-    return db
+class DB:
+    def __init__(self, dbFile):
+        self.dbFile = str(dbFile)
+
+    def connect(self):
+        if not hasattr(g, "_db") or g._db is None:
+            g._db = sqlite3.connect(self.dbFile)
+            g._db.row_factory = sqlite3.Row
+        return g._db
+
+    def close(self, exception=None):
+        db = getattr(g, "_db", None)
+        if db is not None:
+            db.close()
+            g._db = None
+
+    def initSchema(self):
+        db = self.connect()
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS articles (
+                id INTEGER PRIMARY KEY,
+                slug TEXT UNIQUE,
+                title TEXT,
+                content TEXT,
+                created TEXT
+            )
+        """)
+        db.execute("CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles(slug)")
+        db.commit()
+
+DBase = DB(DB_FILE)
 
 @app.teardown_appcontext
-def close_db(exc):
-    db = getattr(g, "_db", None)
-    if db:
-        db.close()
-
-def init_schema():
-    db = get_db()
-    db.execute("""
-    CREATE TABLE IF NOT EXISTS articles (
-        id INTEGER PRIMARY KEY,
-        slug TEXT UNIQUE,
-        title TEXT,
-        content TEXT,
-        created TEXT
-    )""")
-    db.execute("CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles(slug)")
-    db.commit()
+def close_db(exception=None):
+    DBase.close(exception)
 
 def slugify(s: str) -> str:
     s = s.lower()
@@ -52,7 +56,7 @@ def slugify(s: str) -> str:
     s = re.sub(r"[-\s]+", "-", s)
     return s[:200]
 
-def text_snippet(md: str, length=SNIPPET_LENGTH):
+def text_snippet(md: str, length=PAGEPREVIEW):
     # remove markdown syntax quickly
     txt = re.sub(r"```.*?```", "", md, flags=re.S)
     txt = re.sub(r"`.+?`", "", txt)
@@ -62,7 +66,7 @@ def text_snippet(md: str, length=SNIPPET_LENGTH):
     txt = re.sub(r"\s+", " ", txt).strip()
     return txt[:length] + ("…" if len(txt) > length else "")
 
-def _parse_frontmatter(raw):
+def parseMD(raw):
     """Return (meta_dict, body). meta_dict may be empty."""
     fm_regex = r"^---\s*\n(.*?)\n---\s*\n?"
     m = re.match(fm_regex, raw, flags=re.S)
@@ -87,14 +91,7 @@ def _parse_frontmatter(raw):
     body = raw[m.end():]
     return meta, body
 
-def _ensure_uuid_column(db):
-    """Ensure 'uuid' column exists in articles table (SQLite)."""
-    cols = db.execute("PRAGMA table_info(articles)").fetchall()
-    colnames = [c[1] for c in cols]  # PRAGMA returns (cid,name,...)
-    if "uuid" not in colnames:
-        db.execute("ALTER TABLE articles ADD COLUMN uuid TEXT")
-
-def _ensure_columns(db):
+def verfyColumn(db):
     """Ensure optional columns exist in articles table (SQLite)."""
     cols = db.execute("PRAGMA table_info(articles)").fetchall()
     colnames = [c[1] for c in cols]
@@ -112,16 +109,13 @@ def _ensure_columns(db):
 def _sha256(s: str) -> str:
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
-def import_articles_from_files(force=False):
-    """Read articles/ recursively (YYYY/MM/DD/... supported), parse frontmatter,
-    index title, date, uuid, and store body (frontmatter removed).
-    Only updates DB rows when file or metadata actually changed (unless force=True)."""
-    init_schema()
-    db = get_db()
-    _ensure_columns(db)  # adds uuid, content_hash, mtime, last_indexed if missing
+def importArticles(force=False):
+    DBase.initSchema()
+    db = DBase.connect()
+    verfyColumn(db)  # adds uuid, content_hash, mtime, last_indexed if missing
 
     allowed = {".md", ".markdown", ".txt", ".json"}
-    files = sorted(ARTIKEL_DIR.rglob("*"))
+    files = sorted(PAGEDIR.rglob("*"))
     inserted = 0
     updated = 0
     skipped = 0
@@ -132,13 +126,13 @@ def import_articles_from_files(force=False):
         if not p.is_file() or p.suffix.lower() not in allowed:
             continue
 
-        relative = p.relative_to(ARTIKEL_DIR)
+        relative = p.relative_to(PAGEDIR)
         parts = relative.parts
 
         slug = slugify(p.stem)
 
         raw = p.read_text(encoding="utf-8")
-        meta, body = _parse_frontmatter(raw)
+        meta, body = parseMD(raw)
 
         # title preference: frontmatter 'title' -> first H1 -> filename
         if meta.get("title"):
@@ -219,26 +213,18 @@ def import_articles_from_files(force=False):
     # clear caches only if any change happened
     if any_changed:
         try:
-            get_article_by_slug.cache_clear()
-            get_articles_page.cache_clear()
+            articleSlug.cache_clear()
+            articlePage.cache_clear()
         except Exception:
             # lru_cache exists, but be defensive
             pass
 
     return {"inserted": inserted, "updated": updated, "skipped": skipped, "force": bool(force)}
 
-
-    db.commit()
-    # clear caches
-    get_article_by_slug.cache_clear()
-    get_articles_page.cache_clear()
-    return inserted
-
-
-# ---------------- caching (in-memory) ----------------
+# Caching
 @lru_cache(maxsize=512)
-def get_article_by_slug(slug: str):
-    db = get_db()
+def articleSlug(slug: str):
+    db = DBase.connect()
     row = db.execute("SELECT * FROM articles WHERE slug = ?", (slug,)).fetchone()
     if not row:
         return None
@@ -253,14 +239,14 @@ def get_article_by_slug(slug: str):
     }
 
 @lru_cache(maxsize=128)
-def get_articles_page(page: int, q: str = ""):
-    db = get_db()
-    offset = (page - 1) * PER_PAGE
+def articlePage(page: int, q: str = ""):
+    db = DBase.connect()
+    offset = (page - 1) * PAGESHOW
     if q:
         qterm = f"%{q}%"
         rows = db.execute(
             "SELECT * FROM articles WHERE title LIKE ? OR content LIKE ? ORDER BY created DESC LIMIT ? OFFSET ?",
-            (qterm, qterm, PER_PAGE, offset)
+            (qterm, qterm, PAGESHOW, offset)
         ).fetchall()
         total = db.execute(
             "SELECT COUNT(*) FROM articles WHERE title LIKE ? OR content LIKE ?",
@@ -269,7 +255,7 @@ def get_articles_page(page: int, q: str = ""):
     else:
         rows = db.execute(
             "SELECT * FROM articles ORDER BY created DESC LIMIT ? OFFSET ?",
-            (PER_PAGE, offset)
+            (PAGESHOW, offset)
         ).fetchall()
         total = db.execute("SELECT COUNT(*) FROM articles").fetchone()[0]
     items = []
@@ -280,39 +266,39 @@ def get_articles_page(page: int, q: str = ""):
             "created": r["created"],
             "snippet": text_snippet(r["content"])
         })
-    return {"items": items, "total": total, "page": page, "per_page": PER_PAGE}
+    return {"items": items, "total": total, "page": page, "PAGESHOW": PAGESHOW}
 
 # ---------------- routes ----------------
-@app.route("/_import-files")
-def route_import():
+@app.route("/admin/import")
+def importPage():
     force = str(request.args.get("force", "")).lower() in ("1", "true", "yes")
-    inserted = import_articles_from_files(force=force)
+    inserted = importArticles(force=force)
     return jsonify({"inserted": inserted, "force": force})
 
-@app.route("/api/articles")
-def api_articles():
+@app.route("/api/article")
+def getArticle():
     page = max(1, int(request.args.get("page", 1)))
     q = request.args.get("q", "").strip()
-    data = get_articles_page(page, q)
+    data = articlePage(page, q)
     return jsonify(data)
 
 @app.route("/api/article/<slug>")
-def api_article(slug):
-    art = get_article_by_slug(slug)
+def slugArticle(slug):
+    art = articleSlug(slug)
     if not art:
         return abort(404)
     return jsonify(art)
 
 @app.route("/")
-def index():
+def home():
     page = max(1, int(request.args.get("page", 1)))
     q = request.args.get("q", "").strip()
-    data = get_articles_page(page, q)
+    data = articlePage(page, q)
     return render_template("index.html", articles=data["items"], page=page, total=data["total"], q=q)
 
 @app.route("/article/<slug>")
-def article_page(slug):
-    art = get_article_by_slug(slug)
+def read(slug):
+    art = articleSlug(slug)
     if not art:
         return abort(404)
     return render_template("article.html", article=art)
@@ -322,6 +308,6 @@ def article_page(slug):
 if __name__ == "__main__":
     # always reindex on startup (force=True)
     with app.app_context():
-        inserted = import_articles_from_files(force=True)
+        inserted = importArticles(force=True)
         print(f"Indexed articles: {inserted}")
     app.run(host="0.0.0.0", port=5000, debug=True)
