@@ -8,8 +8,8 @@
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="{{ url_for('index') }}"><h2>SMAN 2 Cikarang Pusat</h2></a>
-    <form class="search" action="{{ url_for('index') }}" method="get">
+    <a class="brand" href="{{ url_for('home') }}"><h2>SMAN 2 Cikarang Pusat</h2></a>
+    <form class="search" action="{{ url_for('home') }}" method="get">
       <input name="q" placeholder="search" value="{{ q|default('') }}">
       <button>Search</button>
     </form>
@@ -19,8 +19,9 @@
   </main>
   <footer class="site-footer">
     <h3>&copy; SMAN 2 Cikarang Pusat</h3>
+    <p style="color: red;">Unreleased App, Published for feedback.</p>
     <p>Developed by <a href="https://github.com/hirakamu" target="_blank">Hirakamu</a></p>
   </footer>
-  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <!-- script src="{{ url_for('static', filename='js/app.js') }}"></script-->
 </body>
 </html>
