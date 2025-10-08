@@ -7,7 +7,7 @@ import yaml
 
 # API URL
 url = "https://fakerapi.it/api/v2/texts?_quantity=500&_characters=2048"
-base_dir = "artikel"
+base_dir = "articles"
 
 # Fetch
 res = requests.get(url)
@@ -20,7 +20,7 @@ def random_datetime(start, end):
     return start + timedelta(seconds=seconds)
 
 end_date = datetime.now()
-start_date = end_date - timedelta(days=365)
+start_date = end_date - timedelta(days=365*5)
 
 # Namespace for uuid5
 NAMESPACE = uuid.NAMESPACE_URL

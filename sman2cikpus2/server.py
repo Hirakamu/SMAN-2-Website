@@ -1,148 +1,327 @@
-from flask import Flask, request, abort, send_from_directory, jsonify
-import os, re, sqlite3, random
-from flask_cors import CORS
+# server.py
+import re, sqlite3, hashlib
+from functools import lru_cache
+from datetime import datetime, timezone
 from pathlib import Path
-import yaml  # pip install pyyaml
 
-# Config
-ROOTS = {"article": "artikel"}
+from flask import (
+    Flask, g, render_template, request, redirect, url_for, jsonify, abort
+)
+import markdown
+
+APP_ROOT = Path(__file__).parent
+DB_FILE = APP_ROOT / "articles.db"
+ARTIKEL_DIR = APP_ROOT / "articles"
+PER_PAGE = 10
 SNIPPET_LENGTH = 200
-DB_FILE = "articles.db"
-ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 
-app = Flask(__name__)
-CORS(app)
+app = Flask(__name__, static_folder=str(APP_ROOT / "static"), template_folder=str(APP_ROOT / "templates"))
+app.config["JSON_SORT_KEYS"] = False
 
-# Utils
-def safe_listdir(path):
-    try:
-        return sorted(os.listdir(path))
-    except Exception:
-        return []
-    
+# ---------------- DB helpers ----------------
 def get_db():
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
-    return conn
+    db = getattr(g, "_db", None)
+    if db is None:
+        db = sqlite3.connect(str(DB_FILE))
+        db.row_factory = sqlite3.Row
+        g._db = db
+    return db
 
-def fetchDB(query, params=(), fetchall=True):
-    try:
-        conn = get_db()
-        c = conn.cursor()
-        c.execute(query, params)
-        results = c.fetchall() if fetchall else c.fetchone()
-    except sqlite3.OperationalError as e:
-        print("OperationalError, rebuilding DB:", e)
-        buildDB()
-        conn = get_db()
-        c = conn.cursor()
-        c.execute(query, params)
-        results = c.fetchall() if fetchall else c.fetchone()
-    finally:
-        conn.close()
-    return results
+@app.teardown_appcontext
+def close_db(exc):
+    db = getattr(g, "_db", None)
+    if db:
+        db.close()
 
-def read_md(path):
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            text = f.read()
-        if text.startswith("---"):
-            parts = text.split("---", 2)
-            if len(parts) >= 3:
-                meta_yaml = parts[1]
-                content_md = parts[2].strip()
-                meta = yaml.safe_load(meta_yaml)
-                return meta, content_md
-        return {}, text
-    except Exception as e:
-        print("read_md error", path, e)
-        return {}, ""
-
-def buildDB():
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("""
+def init_schema():
+    db = get_db()
+    db.execute("""
     CREATE TABLE IF NOT EXISTS articles (
-        id TEXT PRIMARY KEY,
+        id INTEGER PRIMARY KEY,
+        slug TEXT UNIQUE,
         title TEXT,
-        date TEXT,
-        path TEXT,
-        snippet TEXT,
-        img TEXT
-    )
-    """)
-    for type_, root in ROOTS.items():
-        if not os.path.isdir(root):
-            continue
-        for year in safe_listdir(root):
-            year_path = os.path.join(root, year)
-            if not os.path.isdir(year_path):
+        content TEXT,
+        created TEXT
+    )""")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles(slug)")
+    db.commit()
+
+def slugify(s: str) -> str:
+    s = s.lower()
+    s = re.sub(r"[^\w\s-]", "", s).strip()
+    s = re.sub(r"[-\s]+", "-", s)
+    return s[:200]
+
+def text_snippet(md: str, length=SNIPPET_LENGTH):
+    # remove markdown syntax quickly
+    txt = re.sub(r"```.*?```", "", md, flags=re.S)
+    txt = re.sub(r"`.+?`", "", txt)
+    txt = re.sub(r"!\[.*?\]\(.*?\)", "", txt)
+    txt = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", txt)
+    txt = re.sub(r"[#>*\-]{1,3}", "", txt)
+    txt = re.sub(r"\s+", " ", txt).strip()
+    return txt[:length] + ("…" if len(txt) > length else "")
+
+def _parse_frontmatter(raw):
+    """Return (meta_dict, body). meta_dict may be empty."""
+    fm_regex = r"^---\s*\n(.*?)\n---\s*\n?"
+    m = re.match(fm_regex, raw, flags=re.S)
+    if not m:
+        return {}, raw
+    fm_text = m.group(1)
+
+    # try PyYAML first (if installed)
+    try:
+        import yaml
+        meta = yaml.safe_load(fm_text) or {}
+    except Exception:
+        # tiny fallback parser for simple key: value lines
+        meta = {}
+        for line in fm_text.splitlines():
+            if ":" not in line:
                 continue
-            for month in safe_listdir(year_path):
-                month_path = os.path.join(year_path, month)
-                if not os.path.isdir(month_path):
-                    continue
-                for day in safe_listdir(month_path):
-                    day_path = os.path.join(year_path, month, day)
-                    if not os.path.isdir(day_path):
-                        continue
-                    for file in safe_listdir(day_path):
-                        filepath = os.path.join(day_path, file)
-                        file_id = os.path.splitext(file)[0]
-                        meta, content_md = read_md(filepath)
-                        title_found = meta.get("title") or file_id
-                        file_id = meta.get("uuid")
-                        date = meta.get("date", f"{year}-{month}-{day}")
-                        snippet = content_md[:SNIPPET_LENGTH]
-                        img = meta.get("img")
+            k, v = line.split(":", 1)
+            k = k.strip()
+            v = v.strip().strip("'\"")
+            meta[k] = v
+    body = raw[m.end():]
+    return meta, body
 
-                        c.execute("""
-                        INSERT OR REPLACE INTO articles (id, title, date, path, snippet, img)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                        """, (file_id, title_found, date, filepath, snippet, img))
-    conn.commit()
-    conn.close()
-    print("Database indexing completed (JSON + MD).")
+def _ensure_uuid_column(db):
+    """Ensure 'uuid' column exists in articles table (SQLite)."""
+    cols = db.execute("PRAGMA table_info(articles)").fetchall()
+    colnames = [c[1] for c in cols]  # PRAGMA returns (cid,name,...)
+    if "uuid" not in colnames:
+        db.execute("ALTER TABLE articles ADD COLUMN uuid TEXT")
 
-# Flask
-@app.route("/rand/")
-def randPosts():
-    all_articles = fetchDB("SELECT title, snippet, img FROM articles")
-    if not all_articles:
-        abort(500, "No articles indexed")
-
-    sample = random.sample(all_articles, min(8, len(all_articles)))
-    data = [{"title": r["title"], "content": r["snippet"], "img": r["img"]} for r in sample]
-    return jsonify(data)
-
-@app.route("/baca")
-def readArticle():
-    title = request.args.get("title")
-    if not title:
-        abort(400, "Missing 'title' parameter")
-    article = fetchDB("SELECT * FROM articles WHERE title=?", (title,), fetchall=False)
-    if not article: abort(404, "Article not found")
-    _, content_md = read_md(article["path"])
-    content_md = re.sub(rf"^#\s*{re.escape(article['title'])}\s*\n?", "", content_md, count=1)
-
-    data = {
-        "title": article["title"],
-        "date": article["date"],
-        "content": content_md,
-        "img": article["img"]
+def _ensure_columns(db):
+    """Ensure optional columns exist in articles table (SQLite)."""
+    cols = db.execute("PRAGMA table_info(articles)").fetchall()
+    colnames = [c[1] for c in cols]
+    # columns we want
+    wanted = {
+        "uuid": "TEXT",
+        "content_hash": "TEXT",
+        "mtime": "REAL",
+        "last_indexed": "TEXT"
     }
+    for name, ctype in wanted.items():
+        if name not in colnames:
+            db.execute(f"ALTER TABLE articles ADD COLUMN {name} {ctype}")
+
+def _sha256(s: str) -> str:
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()
+
+def import_articles_from_files(force=False):
+    """Read articles/ recursively (YYYY/MM/DD/... supported), parse frontmatter,
+    index title, date, uuid, and store body (frontmatter removed).
+    Only updates DB rows when file or metadata actually changed (unless force=True)."""
+    init_schema()
+    db = get_db()
+    _ensure_columns(db)  # adds uuid, content_hash, mtime, last_indexed if missing
+
+    allowed = {".md", ".markdown", ".txt", ".json"}
+    files = sorted(ARTIKEL_DIR.rglob("*"))
+    inserted = 0
+    updated = 0
+    skipped = 0
+    any_changed = False
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    for p in files:
+        if not p.is_file() or p.suffix.lower() not in allowed:
+            continue
+
+        relative = p.relative_to(ARTIKEL_DIR)
+        parts = relative.parts
+
+        slug = slugify(p.stem)
+
+        raw = p.read_text(encoding="utf-8")
+        meta, body = _parse_frontmatter(raw)
+
+        # title preference: frontmatter 'title' -> first H1 -> filename
+        if meta.get("title"):
+            title = str(meta["title"]).strip()
+        else:
+            m = re.search(r"^#\s+(.+)$", body, flags=re.M)
+            title = m.group(1).strip() if m else p.stem.replace("-", " ").replace("_", " ").title()
+
+        # created preference: frontmatter 'date' -> folder YYYY/MM/DD -> file mtime
+        created = None
+        date_val = meta.get("date") or meta.get("created")
+        if date_val:
+            try:
+                if hasattr(date_val, "isoformat"):
+                    created = date_val.isoformat()
+                else:
+                    created = str(date_val)
+            except Exception:
+                created = str(date_val)
+        elif len(parts) >= 4 and parts[0].isdigit() and parts[1].isdigit() and parts[2].isdigit():
+            try:
+                y = int(parts[0]); mth = int(parts[1]); d = int(parts[2])
+                created = datetime(y, mth, d).isoformat()
+            except Exception:
+                created = None
+        if not created:
+            created = datetime.fromtimestamp(p.stat().st_mtime).isoformat()
+
+        uuid_val = meta.get("uuid")
+        content_to_store = body
+        file_mtime = p.stat().st_mtime
+        content_hash = _sha256(raw)
+
+        # fetch existing row if any
+        row = db.execute("SELECT * FROM articles WHERE slug = ?", (slug,)).fetchone()
+        if not row:
+            # insert new
+            db.execute(
+                "INSERT INTO articles (slug, title, content, created, uuid, content_hash, mtime, last_indexed) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (slug, title, content_to_store, created, uuid_val, content_hash, file_mtime, now_iso)
+            )
+            inserted += 1
+            any_changed = True
+        else:
+            # decide if update needed
+            need_update = force
+            # compare important fields (handle None)
+            if not need_update:
+                # content change
+                if (row["content_hash"] or "") != content_hash:
+                    need_update = True
+                # mtime change (filesystem-level)
+                elif (row["mtime"] is None) or (float(row["mtime"]) != float(file_mtime)):
+                    need_update = True
+                # title changed in frontmatter or H1
+                elif (row["title"] or "") != (title or ""):
+                    need_update = True
+                # created/date changed
+                elif (row["created"] or "") != (created or ""):
+                    need_update = True
+                # uuid changed
+                elif (row["uuid"] or "") != (uuid_val or ""):
+                    need_update = True
+
+            if need_update:
+                db.execute(
+                    "UPDATE articles SET title=?, content=?, created=?, uuid=?, content_hash=?, mtime=?, last_indexed=? WHERE slug=?",
+                    (title, content_to_store, created, uuid_val, content_hash, file_mtime, now_iso, slug)
+                )
+                updated += 1
+                any_changed = True
+            else:
+                skipped += 1
+
+    db.commit()
+
+    # clear caches only if any change happened
+    if any_changed:
+        try:
+            get_article_by_slug.cache_clear()
+            get_articles_page.cache_clear()
+        except Exception:
+            # lru_cache exists, but be defensive
+            pass
+
+    return {"inserted": inserted, "updated": updated, "skipped": skipped, "force": bool(force)}
+
+
+    db.commit()
+    # clear caches
+    get_article_by_slug.cache_clear()
+    get_articles_page.cache_clear()
+    return inserted
+
+
+# ---------------- caching (in-memory) ----------------
+@lru_cache(maxsize=512)
+def get_article_by_slug(slug: str):
+    db = get_db()
+    row = db.execute("SELECT * FROM articles WHERE slug = ?", (slug,)).fetchone()
+    if not row:
+        return None
+    html = markdown.markdown(row["content"], extensions=["fenced_code", "tables"])
+    return {
+        "id": row["id"],
+        "slug": row["slug"],
+        "title": row["title"],
+        "content_html": html,
+        "created": row["created"],
+        "snippet": text_snippet(row["content"])
+    }
+
+@lru_cache(maxsize=128)
+def get_articles_page(page: int, q: str = ""):
+    db = get_db()
+    offset = (page - 1) * PER_PAGE
+    if q:
+        qterm = f"%{q}%"
+        rows = db.execute(
+            "SELECT * FROM articles WHERE title LIKE ? OR content LIKE ? ORDER BY created DESC LIMIT ? OFFSET ?",
+            (qterm, qterm, PER_PAGE, offset)
+        ).fetchall()
+        total = db.execute(
+            "SELECT COUNT(*) FROM articles WHERE title LIKE ? OR content LIKE ?",
+            (qterm, qterm)
+        ).fetchone()[0]
+    else:
+        rows = db.execute(
+            "SELECT * FROM articles ORDER BY created DESC LIMIT ? OFFSET ?",
+            (PER_PAGE, offset)
+        ).fetchall()
+        total = db.execute("SELECT COUNT(*) FROM articles").fetchone()[0]
+    items = []
+    for r in rows:
+        items.append({
+            "slug": r["slug"],
+            "title": r["title"],
+            "created": r["created"],
+            "snippet": text_snippet(r["content"])
+        })
+    return {"items": items, "total": total, "page": page, "per_page": PER_PAGE}
+
+# ---------------- routes ----------------
+@app.route("/_import-files")
+def route_import():
+    force = str(request.args.get("force", "")).lower() in ("1", "true", "yes")
+    inserted = import_articles_from_files(force=force)
+    return jsonify({"inserted": inserted, "force": force})
+
+@app.route("/api/articles")
+def api_articles():
+    page = max(1, int(request.args.get("page", 1)))
+    q = request.args.get("q", "").strip()
+    data = get_articles_page(page, q)
     return jsonify(data)
 
-@app.route("/reindex", methods=["POST"])
-def reIndex():
-    buildDB()
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM articles")
-    count = c.fetchone()[0]
-    conn.close()
-    return jsonify({"status": "ok", "count": count})
+@app.route("/api/article/<slug>")
+def api_article(slug):
+    art = get_article_by_slug(slug)
+    if not art:
+        return abort(404)
+    return jsonify(art)
 
-# Run
+@app.route("/")
+def index():
+    page = max(1, int(request.args.get("page", 1)))
+    q = request.args.get("q", "").strip()
+    data = get_articles_page(page, q)
+    return render_template("index.html", articles=data["items"], page=page, total=data["total"], q=q)
+
+@app.route("/article/<slug>")
+def article_page(slug):
+    art = get_article_by_slug(slug)
+    if not art:
+        return abort(404)
+    return render_template("article.html", article=art)
+
+# static files served automatically by Flask via app.static_folder
+
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # always reindex on startup (force=True)
+    with app.app_context():
+        inserted = import_articles_from_files(force=True)
+        print(f"Indexed articles: {inserted}")
+    app.run(host="0.0.0.0", port=5000, debug=True)
