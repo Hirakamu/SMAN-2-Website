@@ -9,7 +9,7 @@ ROOT = Path(__file__).parent
 DB_FILE = ROOT / "articles.db"
 PAGEDIR = ROOT / "articles"
 PAGESHOW = 10
-PAGEPREVIEW = 500
+PAGEPREVIEW = 200
 
 app = Flask(__name__, static_folder=str(ROOT / "static"), template_folder=str(ROOT / "templates"))
 app.config["JSON_SORT_KEYS"] = False
