@@ -6,8 +6,9 @@ from pathlib import Path
 from flask import Flask, g, render_template, request, jsonify, abort
 
 ROOT = Path(__file__).parent
-DB_FILE = ROOT / "articles.db"
-PAGEDIR = ROOT / "articles"
+USERDATA = "/var/lib/sman2cikpus"
+DB_FILE = USERDATA / "articles.db"
+PAGEDIR = USERDATA / "articles"
 PAGESHOW = 10
 PAGEPREVIEW = 200
 
