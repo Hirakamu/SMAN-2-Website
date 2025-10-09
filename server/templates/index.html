@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Home - SMAN 2 Cikpus{% endblock %}
+{% block content %}
+<h1>Articles</h1>
+<div class="pager">
+  {% if page > 1 %}
+    <a href="{{ url_for('home', page=page-1, q=q) }}">Previous</a>
+  {% endif %}
+  <span>Page {{ page }}</span>
+  {% if total > page * 10 %}
+    <a href="{{ url_for('home', page=page+1, q=q) }}">Next</a>
+  {% endif %}
+</div>
+<ul class="articles">
+  {% for a in articles %}
+  <li class="article-item">
+    <h2><a href="{{ url_for('read', slug=a.slug) }}">{{ a.title }}</a></h2>
+    <p class="meta">{{ a.created }}</p>
+    <p class="snippet">{{ a.snippet }}</p>
+  </li>
+  {% endfor %}
+</ul>
+
+<div class="pager">
+  {% if page > 1 %}
+    <a href="{{ url_for('home', page=page-1, q=q) }}">Previous</a>
+  {% endif %}
+  <span>Page {{ page }}</span>
+  {% if total > page * 10 %}
+    <a href="{{ url_for('home', page=page+1, q=q) }}">Next</a>
+  {% endif %}
+</div>
+{% endblock %}
