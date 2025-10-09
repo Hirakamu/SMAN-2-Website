@@ -1,13 +1,101 @@
-:root{--max:900px}
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;line-height:1.5;color:#111}
-.container{max-width:var(--max);margin:24px auto;padding:0 12px}
-.site-header{display:flex;align-items:center;justify-content:space-between;padding:12px;border-bottom:1px solid #eee}
-.brand{font-weight:700;text-decoration:none;color:inherit}
-.search input{padding:6px 8px}
-.articles{list-style:none;padding:0;margin:12px 0}
-.article-item{padding:12px 0;border-bottom:1px dashed #eee}
-.article-item h2{margin:0 0 6px 0;font-size:1.1rem}
-.meta{color:#666;font-size:.85rem;margin-bottom:8px}
-.snippet{color:#222}
-.content img{max-width:100%;height:auto}
-.site-footer{text-align:center;padding:18px 0;color:#777;border-top:1px solid #eee;margin-top:28px}
+:root {
+    --max: 900px
+}
+
+body {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+    line-height: 1.5;
+    color: #111;
+    display: block;
+    margin: 0px;
+}
+
+.container {
+    max-width: var(--max);
+    margin: 24px auto;
+    padding: 0 12px
+}
+
+.site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border-bottom: 1px solid #eee
+}
+
+.brand {
+    font-weight: 700;
+    text-decoration: none;
+    color: inherit;
+    margin-left: 3%;
+}
+
+.search input {
+    color: black;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: text;
+}
+
+.search button {
+    background: black;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.articles {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0;
+}
+
+.article-item {
+    padding: 12px 0;
+    border-bottom: 1px dashed #eee;
+}
+
+.article-item a {
+    display: block;
+    color: black;
+    text-decoration: none;
+    border: 2px solid;
+    border-radius: 20px;
+    padding: 10px;
+}
+
+.article-item h2 {
+    margin: 0 0 6px 0;
+    font-size: 1.1rem
+}
+
+.meta {
+    color: #666;
+    font-size: .85rem;
+    margin-bottom: 8px
+}
+
+.snippet {
+    color: #222
+}
+
+.content img {
+    max-width: 100%;
+    height: auto
+}
+
+.site-footer {
+    text-align: center;
+    padding: 18px 0;
+    color: #777;
+    border-top: 1px solid #eee;
+    margin-top: 28px
+}
