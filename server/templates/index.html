@@ -4,11 +4,11 @@
 <h1>Articles</h1>
 <div class="pager">
   {% if page > 1 %}
-  <a href="{{ url_for('home', page=page-1, q=q) }}">Previous</a>
+  <a href="{{ url_for('home', page=page-1, q=q) }}"><b>Previous</b></a>
   {% endif %}
   <span>Page {{ page }}</span>
   {% if total > page * 10 %}
-  <a href="{{ url_for('home', page=page+1, q=q) }}">Next</a>
+  <a href="{{ url_for('home', page=page+1, q=q) }}"><b>Next</b></a>
   {% endif %}
 </div>
 <ul class="articles">
@@ -25,11 +25,11 @@
 
 <div class="pager">
   {% if page > 1 %}
-  <a href="{{ url_for('home', page=page-1, q=q) }}">Previous</a>
+  <a href="{{ url_for('home', page=page-1, q=q) }}"><b>Previous</b></a>
   {% endif %}
   <span>Page {{ page }}</span>
   {% if total > page * 10 %}
-  <a href="{{ url_for('home', page=page+1, q=q) }}">Next</a>
+  <a href="{{ url_for('home', page=page+1, q=q) }}"><b>Next</b></a>
   {% endif %}
 </div>
 {% endblock %}
