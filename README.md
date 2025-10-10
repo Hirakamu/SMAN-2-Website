@@ -1,9 +1,5 @@
 # SMAN 2 Cikarang Pusat's website repository
 
-This repository contains the source code and assets for the official website of SMAN 2 Cikarang Pusat.
+This repo has been archived due to uncontrollably file size with unknown reasons (maybe from.git/object), all work from latest commit has been moved to new repository and you can still contribute your ideas and improvement to us
 
-## Contributing for the prototype
-
-- Any contributor can help us to develop and improve the prototype.
-
-- See my [to-do list](todo.md) for more specific contributions.
+[New repository](https://github.com/hirakamu/sman-2-website) <-- Click here
