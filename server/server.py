@@ -6,7 +6,7 @@ from pathlib import Path
 from flask import Flask, g, render_template, request, jsonify, abort
 
 ROOT = Path(__file__).parent
-USERDATA = "/var/lib/sman2cikpus"
+USERDATA = Path("/var/lib/sman2cikpus")
 DB_FILE = USERDATA / "articles.db"
 PAGEDIR = USERDATA / "articles"
 PAGESHOW = 10
